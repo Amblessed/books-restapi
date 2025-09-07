@@ -3,15 +3,15 @@ package com.amblessed.books.exception;
 
 
 /*
- * @Project Name: university-management-system
+ * @Project Name: books
  * @Author: Okechukwu Bright Onwumere
- * @Created: 09-Sep-24
+ * @Created: 07-Sep-25
  */
 
 
-public class ResourceNotFoundException extends RuntimeException {
+public class BookNotFoundException extends RuntimeException {
 
-    public ResourceNotFoundException(String message) {
+    public BookNotFoundException(String message) {
         super(message);
     }
 }
