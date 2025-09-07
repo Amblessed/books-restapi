@@ -39,8 +39,8 @@ def test_get_books():
 
 # ------------------- GET BOOKS BY ID -------------------
 @allure.feature('Get Books By ID')
-@allure.story('Positive Test Book Found')
-def test_positive_get_books_by_id_positive_id():
+@allure.story('Positive Test: Valid ID')
+def test_positive_get_books_by_id_valid_id():
     """
     Test GET Books By Category: Positive Test
 
@@ -51,7 +51,7 @@ def test_positive_get_books_by_id_positive_id():
 
 
 @allure.feature('Get Books By ID')
-@allure.story('Negative Test Book Not Found')
+@allure.story('Negative Test: Invalid ID')
 def test_negative_get_books_by_id_invalid_id():
     """
     Test GET Books By ID
@@ -62,7 +62,7 @@ def test_negative_get_books_by_id_invalid_id():
     assert response.json()['detail'] == f"Book with id {user_id} not found"
 
 @allure.feature('Get Books By ID')
-@allure.story('Negative Test Book Negative ID')
+@allure.story('Negative Test: Negative ID')
 def test_negative_get_books_by_id_negative_id():
     """
     Test GET Books By ID
@@ -75,7 +75,7 @@ def test_negative_get_books_by_id_negative_id():
 
 # ------------------- GET BOOKS BY CATEGORY -------------------
 @allure.feature('Get Books By Category')
-@allure.story('Positive Test')
+@allure.story('Positive Test: Valid Category')
 def test_positive_get_books_by_category():
     """
     Test GET Books By Category: Positive Test
@@ -88,7 +88,7 @@ def test_positive_get_books_by_category():
         assert book['category'] == 'Fantasy'
 
 @allure.feature('Get Books By Category')
-@allure.story('Negative Test Category Not Found')
+@allure.story('Negative Test: Category Not Found')
 def test_negative_get_books_by_category():
     """
     Test GET Books By Category
@@ -101,7 +101,7 @@ def test_negative_get_books_by_category():
 
 # ------------------- GET BOOK BY TITLE -------------------
 @allure.feature('Get Books By Title')
-@allure.story('Positive Test Book Found')
+@allure.story('Positive Test: Valid Title')
 def test_positive_get_book_by_title():
     """Test GET Books"""
     params = {'title': 'The Da Vinci Code'}
@@ -111,7 +111,7 @@ def test_positive_get_book_by_title():
         assert book['title'] == 'The Da Vinci Code'
 
 @allure.feature('Get Books By Title')
-@allure.story('Negative Test Book Not Found')
+@allure.story('Negative Test: Invalid Title')
 def test_negative_get_book_by_title():
     """
     Test GET Book By Title with Unknown Title
@@ -145,7 +145,7 @@ def test_positive_create_book_valid_parameters():
 
 
 @allure.feature('Create Books')
-@allure.story('Negative Test Book Already Exists')
+@allure.story('Negative Test: Book Already Exists')
 def test_negative_create_book_exist_title():
     """ Test Create Book with already existing title """
     book = {
@@ -160,7 +160,7 @@ def test_negative_create_book_exist_title():
     assert response_json['detail'] == "Book already exists"
 
 @allure.feature('Create Books')
-@allure.story('Negative Test Create Book with Invalid Rating')
+@allure.story('Negative Test: Create Book with Invalid Rating')
 def test_negative_create_book_invalid_rating():
     """ Test Create Book with invalid rating """
     book = {
@@ -175,7 +175,7 @@ def test_negative_create_book_invalid_rating():
     assert response_json['detail'] == "Invalid rating: Rating must be between 1 and 5"
 
 @allure.feature('Create Books')
-@allure.story('Negative Test Create Book with Invalid Author')
+@allure.story('Negative Test: Create Book with Invalid Author')
 def test_negative_create_book_invalid_author():
     """ Test Create Book with invalid author """
     """Test Create Book with invalid author lengths."""
@@ -193,7 +193,7 @@ def test_negative_create_book_invalid_author():
         assert response_json['detail'] == "Author must be between 10 and 25 characters"
 
 @allure.feature('Create Books')
-@allure.story('Negative Test Create Book with Invalid Category')
+@allure.story('Negative Test: Create Book with Invalid Category')
 def test_negative_create_book_invalid_category():
     """ Test Create Book with invalid category """
     book = {"title": "The Great Summer", "author": "James Peterson", "rating": 4}
@@ -212,8 +212,8 @@ def test_negative_create_book_invalid_category():
 
 # ------------------- UPDATE BOOK -------------------
 @allure.feature('Update Book By ID')
-@allure.story('Positive Test Update Book By ID')
-def test_positive_update_book_by_id():
+@allure.story('Positive Test: Valid ID')
+def test_positive_update_book_by_id_valid_id():
     """Test Update Book with new Values"""
     update_id = 4
     book = {"title": "Introduction to Prompt Engineering", "author": "Onwumere Okechukwu Bright", "category": "Science", "rating": 5}
@@ -226,8 +226,8 @@ def test_positive_update_book_by_id():
     assert response.json()['UpdatedBook']['rating'] == book['rating']
 
 @allure.feature('Update Book By ID')
-@allure.story('Negative Test Update Book By ID')
-def test_negative_update_book_by_id ():
+@allure.story('Negative Test: Invalid ID')
+def test_negative_update_book_by_id_invalid_id():
     """Test Update Book with new Values"""
     update_id = 100
     book = {
@@ -241,8 +241,8 @@ def test_negative_update_book_by_id ():
     assert response.json()['message'] == f"Book with id: '{update_id}' not found"
 
 @allure.feature('Update Book By Title')
-@allure.story('Positive Test Update Book By Title')
-def test_positive_update_book_by_title():
+@allure.story('Positive Test: Valid Title')
+def test_positive_update_book_by_title_valid_title():
     """Test Update Book by Title with new Values"""
     params = {'title': 'The Great Gatsby'}
     book = {
@@ -255,8 +255,8 @@ def test_positive_update_book_by_title():
     assert response.status_code == HTTPStatus.OK
 
 @allure.feature('Update Book By Title')
-@allure.story('Negative Test Book Not Found')
-def test_negative_update_book_book_not_found():
+@allure.story('Negative Test: Invalid Title')
+def test_negative_update_book_invalid_title():
     """Test Update Book with new Values"""
     params = {'title': 'Introduction to Computer Science'}
     book = {
@@ -270,7 +270,7 @@ def test_negative_update_book_book_not_found():
     assert response.json()['message'] == "Book not found"
 
 @allure.feature('Update Book By Title')
-@allure.story('Negative Test Multiple Books Found')
+@allure.story('Negative Test: Multiple Books Found')
 def test_negative_update_book_multiple_books_found():
     """Test Update Book with new Values"""
 
@@ -288,8 +288,8 @@ def test_negative_update_book_multiple_books_found():
 
 # ------------------- DELETE BOOK -------------------
 @allure.feature('Delete Book By ID')
-@allure.story('Positive Test Delete Book By ID')
-def test_positive_delete_book_by_id():
+@allure.story('Positive Test: Valid ID')
+def test_positive_delete_book_by_id_valid_id():
     """
     Test Delete Book with existing ID:
     """
@@ -298,8 +298,8 @@ def test_positive_delete_book_by_id():
     assert response.status_code == HTTPStatus.OK
 
 @allure.feature('Delete Book By ID')
-@allure.story('Negative Test Delete Book By ID')
-def test_negative_delete_book_by_id():
+@allure.story('Negative Test: Invalid ID')
+def test_negative_delete_book_by_id_invalid_id():
     """
     Test Delete Book with invalid ID:
     """
@@ -309,8 +309,8 @@ def test_negative_delete_book_by_id():
     assert response.json()['detail'] == f"Book with id: '{user_id}' not found"
 
 @allure.feature('Delete Book By Title')
-@allure.story('Positive Test Delete Book By Title')
-def test_positive_delete_book_by_title():
+@allure.story('Positive Test: Valid Title')
+def test_positive_delete_book_by_title_valid_title():
     """
     Test Delete Book with existing title:
     title = 'The Hobbit'
@@ -320,8 +320,8 @@ def test_positive_delete_book_by_title():
     assert response.status_code == HTTPStatus.OK
 
 @allure.feature('Delete Book By Title')
-@allure.story('Negative Test Delete Book By Title')
-def test_negative_delete_book_by_title():
+@allure.story('Negative Test: Invalid Title')
+def test_negative_delete_book_by_title_invalid_title():
     """
     Test Delete Book with unknown title:
     title = 'Introduction to Accounting'
