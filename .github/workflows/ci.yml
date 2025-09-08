@@ -55,7 +55,7 @@ jobs:
           name: allure-report
           path: allure-report
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy Allure Report to GitHub Pages
         if: github.ref == 'refs/heads/master'
         run: |
             # Configure Git
