@@ -3,7 +3,7 @@
 [![CI](https://github.com/amblessed/booksapi/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/amblessed/booksapi/actions/workflows/ci.yml)
 
 
-[![Allure Report](https://img.shields.io/badge/Allure-Report-ED5C5C?logo=allure&logoColor=white)](https://amblessed.github.io/booksapi/)
+[![Allure Report](https://img.shields.io/badge/Allure-Report-ED5C5C?logo=allure&logoColor=white)](https://amblessed.github.io/books-restapi/)
 
 
 This project is a Spring Boot application that provides a REST API for managing books. The application provides several endpoints for performing CRUD operations on books. The API testing was done using Python requests library with pytest framework.
