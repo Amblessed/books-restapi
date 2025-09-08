@@ -30,7 +30,7 @@ jobs:
           mvn spring-boot:run &
           SPRING_PID=$!
           echo $SPRING_PID > spring_pid.txt
-          sleep 40
+          sleep 90
 
       - name: Run Pytest with Allure
         run: |
@@ -57,11 +57,24 @@ jobs:
 
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/master'
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.BOOKSAPI_TOKEN }}
-          publish_dir: ./allure-report
-          keep_files: true
+        run: |
+            # Configure Git
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+            # Add remote using PAT
+            if git remote | grep -q '^origin$'; then
+              git remote rm origin
+            fi
+            git remote add origin https://$GH_PAT@github.com/Amblessed/books-restapi.git
+
+            # Commit and push Allure report
+            git checkout --orphan gh-pages
+            git --work-tree=./allure-report add --all
+            git --work-tree=./allure-report commit -m "Deploy Allure report"
+            git push -f origin gh-pages
+          env:
+            GH_PAT: ${{ secrets.BOOKSAPI_TOKEN }}
 
       - name: Stop Spring Boot
         if: always()
