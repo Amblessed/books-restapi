@@ -30,7 +30,13 @@ jobs:
           mvn spring-boot:run &
           SPRING_PID=$!
           echo $SPRING_PID > spring_pid.txt
-          sleep 90
+          
+          # Wait until port 8080 is accepting connections
+          echo "Waiting for Spring Boot to start..."
+          for i in {1..60}; do
+            nc -z localhost 8080 && break
+            sleep 2
+          done
 
       - name: Run Pytest with Allure
         run: |
@@ -68,7 +74,7 @@ jobs:
             if git remote | grep -q '^origin$'; then
               git remote rm origin
             fi
-            git remote add origin https://$GH_PAT@github.com/Amblessed/books-restapi.git
+            git remote add origin https://$github_token@github.com/Amblessed/books-restapi.git
 
             # Commit and push Allure report
             git checkout --orphan gh-pages
