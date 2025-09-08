@@ -20,7 +20,7 @@ target/
 *.ipr
 *.json
 *.css
-*.txt
+*Data.txt
 *.js
 *.ico
 *.html
