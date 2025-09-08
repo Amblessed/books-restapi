@@ -1,6 +1,6 @@
 # Books REST API
 
-[![CI](https://github.com/amblessed/booksapi/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/amblessed/booksapi/actions/workflows/ci.yml)
+[![CI](https://github.com/amblessed/booksapi/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Amblessed/books-restapi/blob/master/.github/workflows/ci.yml)
 
 
 [![Allure Report](https://img.shields.io/badge/Allure-Report-ED5C5C?logo=allure&logoColor=white)](https://amblessed.github.io/books-restapi/)
