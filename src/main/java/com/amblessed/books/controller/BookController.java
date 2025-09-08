@@ -58,7 +58,7 @@ public class BookController {
         if (id < 1) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Invalid ID: Id must be greater than 0"));
+                    .body(Map.of("detail", "Invalid ID: Id must be greater than 0"));
         }
         Optional<Book> optionalBook = books.stream()
                 .filter(book -> book.getId() == id)
@@ -115,11 +115,11 @@ public class BookController {
         if (list.isEmpty()) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND) // 404 Not Found
-                    .body(Map.of("message", "Book not found"));
+                    .body(Map.of("detail", String.format("Book(s) with title '%s' not found", title)));
         }
         else if (list.size() > 1) {
             Map<String, Object> responseBody = new HashMap<>();
-            responseBody.put("message", "Multiple books found");
+            responseBody.put("detail", "Multiple books found");
             responseBody.put("books", list);
             return ResponseEntity
                     .status(HttpStatus.CONFLICT) // 409 Conflict
@@ -143,6 +143,11 @@ public class BookController {
 
     @PutMapping("/books/{id}")
     public ResponseEntity<Map<String, Object>> updateBookById(@PathVariable long id, @RequestBody BookRequest bookRequest){
+        if (id < 1) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("detail", "Invalid ID: Id must be greater than 0"));
+        }
         return books.stream()
                 .filter(book -> book.getId() == id)
                 .findFirst()
@@ -169,8 +174,7 @@ public class BookController {
                             "UpdatedBook", book
                     ));
                 })
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("message", String.format("Book with id: '%d' not found", id))));
+                .orElseThrow(() -> new BookNotFoundException(String.format("Book with id: '%d' not found", id)));
     }
 
     @DeleteMapping(value= "/books")
@@ -187,11 +191,16 @@ public class BookController {
                 ? String.format("1 book with title '%s' deleted successfully", title)
                 : String.format("%d books with title '%s' deleted successfully", deleted, title);
 
-        return ResponseEntity.ok(Map.of("message", message));
+        return ResponseEntity.ok(Map.of("detail", message));
     }
 
     @DeleteMapping("/books/{id}")
     public ResponseEntity<Map<String, String>> deleteBookById(@PathVariable long id){
+        if (id < 1) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("detail", "Invalid ID: Id must be greater than 0"));
+        }
         boolean bookRemoved = books.removeIf(book -> book.getId() == id);
         if (!bookRemoved) {
             throw new BookNotFoundException(String.format("Book with id: '%s' not found", id));

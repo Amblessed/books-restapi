@@ -1,10 +1,12 @@
 
-import requests
-import re
-import allure
 import json
+import re
 from http import HTTPStatus
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union, Any
+from requests import Response
+import allure
+import pytest
+import requests
 
 
 BASE_URL = "http://localhost:8080/api/v1"
@@ -12,6 +14,86 @@ TIMEOUT = 10
 
 def print_response(response):
     print(json.dumps(response.json(), indent=4, sort_keys=True))
+
+
+def _are_all_strings(params: Dict) -> bool:
+    """Check if all keys and values in params are strings.
+    
+    Args:
+        params: Dictionary to validate
+        
+    Returns:
+        bool: True if all keys and values are strings, False otherwise
+    """
+    return all(isinstance(k, str) and isinstance(v, str) 
+              for k, v in params.items())
+
+
+def _validate_request_params(params: Optional[Dict]) -> None:
+    """Validate request parameters.
+    
+    Args:
+        params: Query parameters to validate
+        
+    Raises:
+        TypeError: If params is not a dict
+        ValueError: If params contains non-string keys/values
+    """
+    if params is None:
+        return
+        
+    if not isinstance(params, dict):
+        raise TypeError(f"params must be a dict, got {type(params).__name__}")
+    
+    if not _are_all_strings(params):
+        raise ValueError("All keys and values in params must be strings")
+
+
+def _validate_positive_response(data: List[Dict], case: Dict[str, Any]) -> None:
+    """Validate response data for positive test cases.
+    
+    Args:
+        data: List of books from the response
+        case: Test case dictionary
+    """
+    if not case["check_field"] or not case["params"]:
+        return
+        
+    field = next((f for f in ["category", "title"] if f in case["params"]), None)
+    if field:
+        for book in data:
+            assert book[field] == case["params"][field], f"Book {field} mismatch for {case}"
+
+
+def assign_severity(case: Dict, feature: str) -> tuple:
+    """Assign severity level based on test case type."""
+    is_positive_test = case["type"] == "Positive Test"
+    severity = allure.severity_level.NORMAL if is_positive_test else allure.severity_level.CRITICAL
+    badge = "✅" if case["type"] == "Positive Test" else "❌"
+
+    # Dynamic labels for Allure
+    allure.dynamic.feature(feature)
+    allure.dynamic.story(case["story"])
+    allure.dynamic.severity(severity)
+
+    step_title = (
+        f"{badge} {case['type']}: {case['story']} | "
+        f"Endpoint={case['endpoint']} | Params={case['params'] or 'None'} | "
+        f"Expected Status={case['expected_status'].value}"
+    )
+
+    return is_positive_test, step_title
+
+
+def _validate_negative_response(response: Response, case: Dict[str, Any]) -> None:
+    """Validate response for negative test cases.
+    
+    Args:
+        response: Response object
+        case: Test case dictionary
+    """
+    if case.get("expected_detail"):
+        assert response.json().get("detail") == case["expected_detail"], f"Detail mismatch for {case}"
 
 
 def make_request(method: str, endpoint: str, params: Optional[Dict] = None, json_data: Optional[Dict] = None) -> requests.Response:
@@ -27,13 +109,7 @@ def make_request(method: str, endpoint: str, params: Optional[Dict] = None, json
     Returns:
         requests.Response object
     """
-    # Runtime type checks with more specific error messages
-    if params is not None:
-        if not isinstance(params, dict):
-            raise TypeError(f"params must be a dict, got {type(params).__name__}")
-        # Ensure params is a dictionary with string keys and string values
-        if not all(isinstance(k, str) and isinstance(v, str) for k, v in params.items()):
-            raise ValueError("All keys and values in params must be strings")
+    _validate_request_params(params)
     
     if json_data is not None and not isinstance(json_data, dict):
         raise TypeError(f"json_data must be a dict, got {type(json_data).__name__}")
@@ -41,23 +117,18 @@ def make_request(method: str, endpoint: str, params: Optional[Dict] = None, json
     url = f"{BASE_URL}{endpoint}"
     
     try:
-        # Make the request with proper parameter handling
-        if method.upper() in ('GET', 'DELETE'):
-            response = requests.request(
-                method=method,
-                url=url,
-                params=params or {},
-                timeout=TIMEOUT
-            )
-        else:  # For POST, PUT, PATCH, etc.
-            response = requests.request(
-                method=method,
-                url=url,
-                params=params or {},
-                json=json_data or {},
-                timeout=TIMEOUT
-            )
+        request_kwargs = {
+            'method': method,
+            'url': url,
+            'params': params or {},
+            'timeout': TIMEOUT
+        }
+        
+        # Only add json payload for non-GET/DELETE methods
+        if method.upper() not in ('GET', 'DELETE'):
+            request_kwargs['json'] = json_data or {}
             
+        response = requests.request(**request_kwargs)
         print_response(response)
         return response
         
@@ -65,102 +136,106 @@ def make_request(method: str, endpoint: str, params: Optional[Dict] = None, json
         print(f"Error making {method} request to {url}: {str(e)}")
         raise
 
-# ------------------- GET BOOKS -------------------
-@allure.feature('Get Books')
-@allure.story('GET /books')
-def test_get_books():
-    """Test GET Books"""
-    response = make_request("GET", "/books")
-    assert response.status_code == HTTPStatus.OK
-    assert len(response.json()['books']) > 0
 
-# ------------------- GET BOOKS BY ID -------------------
-@allure.feature('Get Books By ID')
-@allure.story('Positive Test: Valid ID')
-def test_positive_get_books_by_id_valid_id():
-    """
-    Test GET Books By Category: Positive Test
+# ------------------- GENERIC GET TEST WITH SEVERITY -------------------
+book = {"title": "Introduction to Prompt Engineering", "author": "Onwumere Okechukwu Bright", "category": "Science", "rating": 5}
+VALID_PARAMS_TITLE = {"title": "Divergent"}
+VALID_PARAMS_TITLE_TWO = {"title": "The Lord of the Rings"}
+MULTIPLE_PARAMS_TITLE = {"title": "The Da Vinci Code"}
+INVALID_PARAMS_TITLE = {"title": "BadBookTitle"}
+EXPECTED_DETAIL = "Book(s) with title 'BadBookTitle' not found"
+EXPECTED_DETAIL_MULTIPLE = "Multiple books found"
+EXPECTED_DETAIL_INVALID_ID = "Invalid ID: Id must be greater than 0"
 
-    """
-    user_id = 6
-    response = make_request("GET", f"/books/{user_id}")
-    assert response.status_code == HTTPStatus.OK
+test_cases = {
+    "GET": [
+    # ---------------- All Books ----------------
+    {"story": "Get All Books", "endpoint": "/books", "params": None, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": "books", "type": "Positive Test"},
+    # ---------------- Books by ID ----------------
+    {"story": "Get Books By ID", "endpoint": "/books/6", "params": None, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": None, "type": "Positive Test"},
+    {"story": "Get Books By ID", "endpoint": "/books/4999", "params": None, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": "Book with id 4999 not found", "check_field": None, "type": "Negative Test"},
+    {"story": "Get Books By ID", "endpoint": "/books/-5", "params": None, "expected_status": HTTPStatus.BAD_REQUEST, "expected_detail": EXPECTED_DETAIL_INVALID_ID, "check_field": None, "type": "Negative Test"},
+    # ---------------- Books by Category ----------------
+    {"story": "Get Books By Category", "endpoint": "/books", "params": {"category": "Fantasy"}, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": "category", "type": "Positive Test"},
+    {"story": "Get Books By Category", "endpoint": "/books", "params": {"category": "History"}, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": "No books found", "check_field": None, "type": "Negative Test"},
+    # ---------------- Books by Title ----------------
+    {"story": "Get Books By Title", "endpoint": "/books", "params": MULTIPLE_PARAMS_TITLE, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": "title", "type": "Positive Test"},
+    {"story": "Get Books By Title", "endpoint": "/books", "params": {"title": "Sunflower"}, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": None, "check_field": None, "type": "Negative Test"},
+    ],
+     "DELETE": [
+    # ---------------- Delete Book by ID ----------------
+    {"story": "Delete Book By ID", "endpoint": "/books/6", "params": None, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": None, "type": "Positive Test"},
+    {"story": "Delete Book By ID", "endpoint": "/books/4999", "params": None, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": "Book with id: '4999' not found", "check_field": None, "type": "Negative Test"},
+    {"story": "Delete Book By ID", "endpoint": "/books/-5", "params": None, "expected_status": HTTPStatus.BAD_REQUEST, "expected_detail": EXPECTED_DETAIL_INVALID_ID, "check_field": None, "type": "Negative Test"},
+    # ---------------- Delete Book by Title ----------------
+    {"story": "Delete Book By Title", "endpoint": "/books", "params": VALID_PARAMS_TITLE_TWO, "expected_status": HTTPStatus.OK, "expected_detail": "1 book with title 'Divergent' deleted successfully", "check_field": "category", "type": "Positive Test"},
+    {"story": "Delete Book By Title", "endpoint": "/books", "params": INVALID_PARAMS_TITLE, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": EXPECTED_DETAIL, "check_field": None, "type": "Negative Test"}
+    ],
+    "PUT":[
+        # ---------------- Update Book by ID ----------------
+        {"story": "Update Book By ID", "endpoint": "/books/4", "params": {}, "payload": book, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": None, "type": "Positive Test"},
+        {"story": "Update Book By ID", "endpoint": "/books/4999", "params":{}, "payload": book, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": "Book with id: '4999' not found", "check_field": None, "type": "Negative Test"},
+        {"story": "Update Book By ID", "endpoint": "/books/-5", "params":{}, "payload": book, "expected_status": HTTPStatus.BAD_REQUEST, "expected_detail": EXPECTED_DETAIL_INVALID_ID, "check_field": None, "type": "Negative Test"},
+        # ---------------- Update Book by Title ----------------
+        {"story": "Update Book By Title", "endpoint": "/books", "payload": book, "params": VALID_PARAMS_TITLE, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": "category", "type": "Positive Test"},
+        {"story": "Update Book By Title", "endpoint": "/books", "payload": book, "params": INVALID_PARAMS_TITLE, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": EXPECTED_DETAIL, "check_field": None, "type": "Negative Test"},
+        {"story": "Update Book By Title", "endpoint": "/books", "payload": book, "params": MULTIPLE_PARAMS_TITLE, "expected_status": HTTPStatus.CONFLICT, "expected_detail": "Multiple books found", "check_field": None, "type": "Negative Test"}
+    ]
+}
 
 
-@allure.feature('Get Books By ID')
-@allure.story('Negative Test: Invalid ID')
-def test_negative_get_books_by_id_invalid_id():
-    """
-    Test GET Books By ID
-    """
-    user_id = 4999
-    response = make_request("GET", f"/books/{user_id}")
-    assert response.json()['status'] == HTTPStatus.NOT_FOUND.value
-    assert response.json()['detail'] == f"Book with id {user_id} not found"
+def _validate_negative_response_detail(response: requests.Response, case: Dict):
+    """Helper to validate error details in negative test cases."""
+    if not case:
+        return
 
-@allure.feature('Get Books By ID')
-@allure.story('Negative Test: Negative ID')
-def test_negative_get_books_by_id_negative_id():
-    """
-    Test GET Books By ID
-    """
-    user_id = -5
-    response = make_request("GET", f"/books/{user_id}")
-    assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert response.json()['message'] == "Invalid ID: Id must be greater than 0"
+    response_data = response.json()
+    assert response_data.get("detail") == case, f"Expected detail: {case}, Actual: {response_data.get('detail')}"
+
+def _validate_status_code(response: requests.Response, case: Dict):
+    """Helper to validate error details in negative test cases."""
+    actual_status = response.status_code
+    assert actual_status == case, (
+        f"Unexpected status code for {case['story']} | "
+        f"Expected: {case['expected_status'].value}, Actual: {actual_status}"
+    )
+
+def _validate_positive_response_detail(response: requests.Response, case: Dict):
+    """Helper to validate error details in negative test cases."""
+    # Validate data for positive responses
+    books_array = response.json().get("books", [])
+    if case:
+        value = "category" if "category" in case else "title"
+        for data in books_array:
+            assert data[value] == case[value], f"Book {value} mismatch for {case}"
 
 
-# ------------------- GET BOOKS BY CATEGORY -------------------
-@allure.feature('Get Books By Category')
-@allure.story('Positive Test: Valid Category')
-def test_positive_get_books_by_category():
+@pytest.mark.get
+@pytest.mark.parametrize("case", test_cases["GET"])
+def test_generic_get_books_severity(case):
     """
-    Test GET Books By Category: Positive Test
-    params = {'category': 'Fantasy'}
+    Generic GET test for Books API with dynamic Allure labels and severity.
     """
-    params = {'category': 'Fantasy'}
-    response = make_request("GET", "/books", params=params)
-    assert response.status_code == HTTPStatus.OK
-    for book in response.json()['books']:
-        assert book['category'] == 'Fantasy'
 
-@allure.feature('Get Books By Category')
-@allure.story('Negative Test: Category Not Found')
-def test_negative_get_books_by_category():
-    """
-    Test GET Books By Category
-    params = {'category': 'History'}
-    """
-    params = {'category': 'History'}
-    response = make_request("GET", "/books", params=params)
-    assert response.json()['status'] == HTTPStatus.NOT_FOUND.value
-    assert response.json()['detail'] == "No books found"
+    is_positive_test, step_title = assign_severity(case, "Get Books")
 
-# ------------------- GET BOOK BY TITLE -------------------
-@allure.feature('Get Books By Title')
-@allure.story('Positive Test: Valid Title')
-def test_positive_get_book_by_title():
-    """Test GET Books"""
-    params = {'title': 'The Da Vinci Code'}
-    response = make_request("GET", "/books", params=params)
-    assert response.status_code == HTTPStatus.OK
-    for book in response.json()['books']:
-        assert book['title'] == 'The Da Vinci Code'
+    with allure.step(step_title):
+        response = make_request("GET", case["endpoint"], params=case["params"])
+        _validate_status_code(response, case["expected_status"])
 
-@allure.feature('Get Books By Title')
-@allure.story('Negative Test: Invalid Title')
-def test_negative_get_book_by_title():
-    """
-    Test GET Book By Title with Unknown Title
-    """
-    params = {'title': 'Sunflower'}
-    response = make_request("GET","/books", params=params)
-    assert response.status_code == HTTPStatus.NOT_FOUND
+        # Validate data for positive responses
+        if is_positive_test and case["check_field"]:
+            _validate_positive_response_detail(response, case["params"])
+        else:
+            # Validate expected detail for negative responses
+            _validate_negative_response_detail(response, case["expected_detail"])
+
 
 
 # ------------------- CREATE BOOK -------------------
 @allure.feature('Create Books')
 @allure.story('POST /books')
+@pytest.mark.create
 def test_positive_create_book_valid_parameters():
     """Test Create Book with new Title"""
     book = {
@@ -181,189 +256,93 @@ def test_positive_create_book_valid_parameters():
     assert response_json_body['rating'] == book['rating']
 
 
-@allure.feature('Create Books')
-@allure.story('Negative Test: Book Already Exists')
-def test_negative_create_book_exist_title():
-    """ Test Create Book with already existing title """
-    book = {
-        "title": "The Great Gatsby",
-        "author": "F. Scott Fitzgerald",
-        "category": "Fiction",
-        "rating": 4
+# Define constraints for each field
+invalid_rules = {
+    "rating": {
+        "type": int,
+        "invalid_values": [0, 6, 10],  # outside valid range 1-5
+        "error_msg": "Invalid rating: Rating must be between 1 and 5"
+    },
+    "author": {
+        "type": str,
+        "invalid_values": ["short", "a"*50],  # too short / too long
+        "error_msg": "Author must be between 10 and 25 characters"
+    },
+    "category": {
+        "type": str,
+        "invalid_values": ["cat", "a"*50],  # too short / too long
+        "error_msg": "Category must be between 5 and 20 characters"
+    },
+    "title_exists": {  # special case for conflict
+        "book": {"title": "The Great Gatsby", "author": "F. Scott Fitzgerald", "category": "Fiction", "rating": 4},
+        "status": HTTPStatus.CONFLICT.value,
+        "error_msg": "Book already exists"
     }
+}
+
+# Generate all parameterized test cases dynamically
+parametrize_data = []
+
+# Add invalid field cases
+for field, rules in invalid_rules.items():
+    if field == "title_exists":
+        parametrize_data.append((rules["book"], rules["status"], rules["error_msg"]))
+        continue
+    base_book = {"title": "The Great Summer", "author": "Valid Author", "category": "Fiction", "rating": 4}
+    for invalid_value in rules["invalid_values"]:
+        book = base_book.copy()
+        book[field] = invalid_value
+        parametrize_data.append((book, HTTPStatus.BAD_REQUEST.value, rules["error_msg"]))
+
+@allure.feature('Create Books')
+@pytest.mark.create
+@pytest.mark.parametrize("book, expected_status, expected_detail", parametrize_data)
+def test_negative_create_book_dynamic(book, expected_status, expected_detail):
+    """ Dynamically generated negative tests for creating a book """
     response = make_request("POST", "/books", json_data=book)
     response_json = response.json()
-    assert response_json['status'] == HTTPStatus.CONFLICT.value
-    assert response_json['detail'] == "Book already exists"
-
-@allure.feature('Create Books')
-@allure.story('Negative Test: Create Book with Invalid Rating')
-def test_negative_create_book_invalid_rating():
-    """ Test Create Book with invalid rating """
-    book = {
-        "title": "The Great Summer",
-        "author": "F. Scott Fitzgerald",
-        "category": "Fiction",
-        "rating": 6
-    }
-    response = make_request("POST", "/books", json_data=book)
-    response_json = response.json()
-    assert response_json['status'] == HTTPStatus.BAD_REQUEST.value
-    assert response_json['detail'] == "Invalid rating: Rating must be between 1 and 5"
-
-@allure.feature('Create Books')
-@allure.story('Negative Test: Create Book with Invalid Author')
-def test_negative_create_book_invalid_author():
-    """ Test Create Book with invalid author """
-    """Test Create Book with invalid author lengths."""
-    book = {"title": "The Great Summer", "category": "Fiction", "rating": 4}
-    invalid_authors = [
-        "the",  # too short
-        "thegjjksdgjgskjdfgkhjdhskjbgdkjfbgjdfbgsjdbfjkfjdbvdfjbjfbjfbjfbfjbfbjs"  # too long
-    ]
-
-    for author in invalid_authors:
-        book["author"] = author
-        response = make_request("POST", "/books", json_data=book)
-        response_json = response.json()
-        assert response_json['status'] == HTTPStatus.BAD_REQUEST.value
-        assert response_json['detail'] == "Author must be between 10 and 25 characters"
-
-@allure.feature('Create Books')
-@allure.story('Negative Test: Create Book with Invalid Category')
-def test_negative_create_book_invalid_category():
-    """ Test Create Book with invalid category """
-    book = {"title": "The Great Summer", "author": "James Peterson", "rating": 4}
-    invalid_categories = [
-        "ft",  # too short
-        "Introduction to Programming for Beginners"  # too long
-    ]
-
-    for category in invalid_categories:
-        book["category"] = category
-        response = make_request("POST", "/books", json_data=book)
-        response_json = response.json()
-        assert response_json['status'] == HTTPStatus.BAD_REQUEST.value
-        assert response_json['detail'] == "Category must be between 5 and 20 characters"
+    assert response_json['status'] == expected_status
+    assert response_json['detail'] == expected_detail
 
 
-# ------------------- UPDATE BOOK -------------------
-@allure.feature('Update Book By ID')
-@allure.story('Positive Test: Valid ID')
-def test_positive_update_book_by_id_valid_id():
-    """Test Update Book with new Values"""
-    update_id = 4
-    book = {"title": "Introduction to Prompt Engineering", "author": "Onwumere Okechukwu Bright", "category": "Science", "rating": 5}
-    response = make_request("PUT", f"/books/{update_id}", json_data=book)
-    assert response.status_code == HTTPStatus.OK
-    assert response.json()['message'] == "Book updated successfully"
-    assert response.json()['UpdatedBook']['title'] == book['title']
-    assert response.json()['UpdatedBook']['author'] == book['author']
-    assert response.json()['UpdatedBook']['category'] == book['category']
-    assert response.json()['UpdatedBook']['rating'] == book['rating']
-
-@allure.feature('Update Book By ID')
-@allure.story('Negative Test: Invalid ID')
-def test_negative_update_book_by_id_invalid_id():
-    """Test Update Book with new Values"""
-    update_id = 100
-    book = {
-        "title": "Introduction to Python",
-        "author": "Onwumere Okechukwu Bright",
-        "category": "Computer Science",
-        "rating": 5
-    }
-    response = make_request("PUT", f"/books/{update_id}", json_data=book)
-    assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json()['message'] == f"Book with id: '{update_id}' not found"
-
-@allure.feature('Update Book By Title')
-@allure.story('Positive Test: Valid Title')
-def test_positive_update_book_by_title_valid_title():
-    """Test Update Book by Title with new Values"""
-    params = {'title': 'The Great Gatsby'}
-    book = {
-        "title": "Introduction to OpenAI API",
-        "author": "Onwumere Okechukwu Bright",
-        "category": "Science",
-        "rating": 5
-    }
-    response = make_request("PUT", "/books", params=params, json_data=book)
-    assert response.status_code == HTTPStatus.OK
-
-@allure.feature('Update Book By Title')
-@allure.story('Negative Test: Invalid Title')
-def test_negative_update_book_invalid_title():
-    """Test Update Book with new Values"""
-    params = {'title': 'Introduction to Computer Science'}
-    book = {
-        "title": "Introduction to Python",
-        "author": "Onwumere Okechukwu Bright",
-        "category": "Computer Science",
-        "rating": 5
-    }
-    response = make_request("PUT", "/books", params=params, json_data=book)
-    assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json()['message'] == "Book not found"
-
-@allure.feature('Update Book By Title')
-@allure.story('Negative Test: Multiple Books Found')
-def test_negative_update_book_multiple_books_found():
-    """Test Update Book with new Values"""
-
-    params = {'title': 'The Da Vinci Code'}
-    book = {
-        "title": "Introduction to Generative AI",
-        "author": "Onwumere Okechukwu Bright",
-        "category": "Science",
-        "rating": 5
-    }
-    response = make_request("PUT", "/books", params=params, json_data=book)
-    assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json()['message'] == "Multiple books found"
-
-
-# ------------------- DELETE BOOK -------------------
-@allure.feature('Delete Book By ID')
-@allure.story('Positive Test: Valid ID')
-def test_positive_delete_book_by_id_valid_id():
+# ------------------- GENERIC UPDATE BOOK TEST WITH SEVERITY -------------------
+@pytest.mark.put
+@pytest.mark.parametrize("case", test_cases["PUT"])
+def test_generic_update_books_severity(case):
     """
-    Test Delete Book with existing ID:
+    Generic UPDATE test for Books API with dynamic Allure labels and severity.
+    pytest -m put
     """
-    user_id = 11
-    response = make_request("DELETE", f"/books/{user_id}")
-    assert response.status_code == HTTPStatus.OK
+    is_positive_test, step_title = assign_severity(case, "Update Books")
 
-@allure.feature('Delete Book By ID')
-@allure.story('Negative Test: Invalid ID')
-def test_negative_delete_book_by_id_invalid_id():
-    """
-    Test Delete Book with invalid ID:
-    """
-    user_id = 99999999
-    response = make_request("DELETE", f"/books/{user_id}")
-    assert response.json()['status'] == HTTPStatus.NOT_FOUND.value
-    assert response.json()['detail'] == f"Book with id: '{user_id}' not found"
+    with allure.step(step_title):
+        response = make_request("PUT", case["endpoint"], json_data=case["payload"], params=case["params"])
+        _validate_status_code(response, case["expected_status"])
 
-@allure.feature('Delete Book By Title')
-@allure.story('Positive Test: Valid Title')
-def test_positive_delete_book_by_title_valid_title():
-    """
-    Test Delete Book with existing title:
-    title = 'The Hobbit'
-    """
-    params = {'title': 'Divergent'}
-    response = make_request("DELETE", "/books", params=params)
-    assert response.status_code == HTTPStatus.OK
+        # Validate data for positive responses
+        if is_positive_test and case["check_field"]:
+            _validate_positive_response_detail(response, case["params"])
+        else:
+            # Validate expected detail for negative responses
+            _validate_negative_response_detail(response, case["expected_detail"])
 
-@allure.feature('Delete Book By Title')
-@allure.story('Negative Test: Invalid Title')
-def test_negative_delete_book_by_title_invalid_title():
+
+# ------------------- GENERIC DELETE BOOK TEST WITH SEVERITY -------------------
+@pytest.mark.get
+@pytest.mark.parametrize("case", test_cases["DELETE"])
+def test_generic_delete_books_severity(case):
     """
-    Test Delete Book with unknown title:
-    title = 'Introduction to Accounting'
+    Generic DELETE test for Books API with dynamic Allure labels and severity.
     """
-    params = {'title': 'Introduction to Accounting'}
-    response = make_request("DELETE", "/books", params=params)
-    assert response.json()['status'] == HTTPStatus.NOT_FOUND.value
-    assert response.json()['detail'] == f"Book(s) with title '{params['title']}' not found"
+    is_positive_test, step_title = assign_severity(case, "Delete Books")
+
+    with allure.step(step_title):
+        response = make_request("DELETE", case["endpoint"], params=case["params"])
+        _validate_status_code(response, case["expected_status"])
+
+        # Validate data for positive responses
+        if is_positive_test and case["check_field"]:
+            _validate_positive_response_detail(response, case["params"])
+        else:
+            # Validate expected detail for negative responses
+            _validate_negative_response_detail(response, case["expected_detail"])

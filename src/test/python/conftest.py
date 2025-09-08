@@ -1,7 +1,7 @@
 import subprocess
 import time
 import pytest
-import os, shutil
+import os, shutil, sys
 import socket
 import platform
 
@@ -94,8 +94,10 @@ def run_command(cmd, description: str):
     """Run a subprocess command and print stdout/stderr."""
     print(description)
     result = subprocess.run(cmd, capture_output=True, text=True)
-    print("STDOUT:\n", result.stdout)
-    print("STDERR:\n", result.stderr)
+    if result.stdout:
+        print("STDOUT:\n", result.stdout)
+    if result.stderr:
+        print("STDERR:\n", result.stderr)
     return result.returncode
 
 def pytest_sessionstart(session):
@@ -110,9 +112,10 @@ def pytest_sessionstart(session):
     # Create environment.properties
     env_file = os.path.join(RESULTS_DIR, "environment.properties")
     os_name = f"{platform.system()} {platform.release()}"
+    python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     with open(env_file, "w") as f:
         f.write(f"OS={os_name}\n")
-        f.write("Python=3.13\n")
+        f.write(f"Python={python_version}\n")
         f.write("Project=BooksApp\n")
         f.write(f"API_BASE_URL={BASE_URL}\n")
 
