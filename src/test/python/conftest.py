@@ -125,6 +125,9 @@ def pytest_sessionstart(session):
 def pytest_sessionfinish(session, exitstatus):
     """After tests finish, generate and open Allure report automatically."""
 
+    if os.getenv("CI", "false").lower() == "true":
+        return
+
     report_dir = os.path.join(PROJECT_ROOT, "allure-report")
     allure_cmd = r"C:\allure\allure-2.35.1\bin\allure.bat"
 
