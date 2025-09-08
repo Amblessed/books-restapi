@@ -18,6 +18,17 @@ target/
 *.iws
 *.iml
 *.ipr
+*.json
+*.css
+*.txt
+*.js
+*.ico
+*.html
+*.csv
+mvnw.cmd
+mvnw
+.mvn/wrapper/*
+springboot.log
 
 ### NetBeans ###
 /nbproject/private/
