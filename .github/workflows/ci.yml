@@ -57,6 +57,8 @@ jobs:
 
       - name: Deploy Allure Report to GitHub Pages
         if: github.ref == 'refs/heads/master'
+        env:
+          GH_PAT: ${{ secrets.BOOKSAPI_TOKEN }}
         run: |
             # Configure Git
             git config --global user.name "github-actions[bot]"
@@ -73,8 +75,7 @@ jobs:
             git --work-tree=./allure-report add --all
             git --work-tree=./allure-report commit -m "Deploy Allure report"
             git push -f origin gh-pages
-          env:
-            GH_PAT: ${{ secrets.BOOKSAPI_TOKEN }}
+        
 
       - name: Stop Spring Boot
         if: always()
