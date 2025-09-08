@@ -84,14 +84,15 @@ jobs:
           name: allure-report
           path: allure-report
 
-      # Deploy to GitHub Pages using PAT
+      # Deploy to GitHub Pages
       - name: Deploy Allure Report to GitHub Pages
         if: github.ref == 'refs/heads/master'
         uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.BOOKSAPI_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./allure-report
           keep_files: true
+          force_orphan: true
 
       # Stop Spring Boot
       - name: Stop Spring Boot
