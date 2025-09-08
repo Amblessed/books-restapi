@@ -1,4 +1,4 @@
-name: CI ChinookAPI + Pytest + Allure
+name: CI BOOKSAPI + Pytest + Allure
 
 on:
   push:
