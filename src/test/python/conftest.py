@@ -6,17 +6,20 @@ import socket
 import platform
 
 # --- Configuration ---
-MAVEN_HOME = os.environ.get("MVN_HOME")  # default if not set
+MAVEN_HOME = os.environ.get("MVN_HOME", r"C:\apache-maven-3.9.5")  # default if not set
 MAVEN_CMD = os.path.join(MAVEN_HOME, "bin", "mvn.cmd")
-SPRING_BOOT_CMD = [MAVEN_CMD, "spring-boot:run"]
+#SPRING_BOOT_CMD = [MAVEN_CMD, "spring-boot:run"]
+SPRING_BOOT_CMD = [r"C:\maven\apache-maven-3.9.9-bin\apache-maven-3.9.9\bin\mvn.cmd", "spring-boot:run"]
 SERVER_PORT = 8080
 BASE_URL = f"http://localhost:{SERVER_PORT}/api/v1/"
-STARTUP_WAIT = 90  # seconds
+STARTUP_WAIT = 120  # seconds
 POLL_INTERVAL = 1  # seconds
 LOG_FILE = "springboot.log"
 PROJECT_PATH = os.getcwd()
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 RESULTS_DIR = os.path.join(PROJECT_ROOT, "allure-results")
+
+PATH_PROJECT=r"C:\Users\okeyb\Documents\Java\books"
 
 import time
 import socket
@@ -72,7 +75,7 @@ def spring_boot_server():
     # Start Spring Boot
     print("\nStarting Spring Boot server...")
     with open(LOG_FILE, "w") as log:
-        process = subprocess.Popen(SPRING_BOOT_CMD, cwd=PROJECT_PATH, stdout=log, stderr=log)
+        process = subprocess.Popen(SPRING_BOOT_CMD, cwd=PATH_PROJECT, stdout=log, stderr=log)
 
     # Wait until server is up
     print(f"Waiting for Spring Boot to start on port {SERVER_PORT}...")
