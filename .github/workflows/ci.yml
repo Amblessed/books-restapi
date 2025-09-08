@@ -58,7 +58,7 @@ jobs:
       - name: Deploy Allure Report to GitHub Pages
         if: github.ref == 'refs/heads/master'
         env:
-          GH_PAT: ${{ secrets.BOOKSAPI_TOKEN }}
+          github_token: ${{ secrets.BOOKSAPI_TOKEN }}
         run: |
             # Configure Git
             git config --global user.name "github-actions[bot]"
