@@ -4,6 +4,7 @@ import re
 import allure
 import json
 from http import HTTPStatus
+from typing import Dict, Optional, Union
 
 
 BASE_URL = "http://localhost:8080/api/v1"
@@ -12,21 +13,57 @@ TIMEOUT = 10
 def print_response(response):
     print(json.dumps(response.json(), indent=4, sort_keys=True))
 
-def make_request(method, endpoint, params=None, json_data=None):
+
+def make_request(method: str, endpoint: str, params: Optional[Dict] = None, json_data: Optional[Dict] = None) -> requests.Response:
     """
     Makes an HTTP request with proper handling of params and json payloads.
-    """
-    url = f"{BASE_URL}{endpoint}"
-    # Only include json if json_data is provided
-    request_kwargs = {"timeout": TIMEOUT}
-    if params:
-        request_kwargs["params"] = params
-    if json_data:
-        request_kwargs["json"] = json_data
 
-    response = requests.request(method, url, **request_kwargs)
-    print_response(response)
-    return response
+    Args:
+        method: HTTP method (GET, POST, etc.)
+        endpoint: API endpoint (will be appended to BASE_URL)
+        params: Query parameters as a dict, or None
+        json_data: JSON payload as a dict, or None
+
+    Returns:
+        requests.Response object
+    """
+    # Runtime type checks with more specific error messages
+    if params is not None:
+        if not isinstance(params, dict):
+            raise TypeError(f"params must be a dict, got {type(params).__name__}")
+        # Ensure params is a dictionary with string keys and string values
+        if not all(isinstance(k, str) and isinstance(v, str) for k, v in params.items()):
+            raise ValueError("All keys and values in params must be strings")
+    
+    if json_data is not None and not isinstance(json_data, dict):
+        raise TypeError(f"json_data must be a dict, got {type(json_data).__name__}")
+
+    url = f"{BASE_URL}{endpoint}"
+    
+    try:
+        # Make the request with proper parameter handling
+        if method.upper() in ('GET', 'DELETE'):
+            response = requests.request(
+                method=method,
+                url=url,
+                params=params or {},
+                timeout=TIMEOUT
+            )
+        else:  # For POST, PUT, PATCH, etc.
+            response = requests.request(
+                method=method,
+                url=url,
+                params=params or {},
+                json=json_data or {},
+                timeout=TIMEOUT
+            )
+            
+        print_response(response)
+        return response
+        
+    except Exception as e:
+        print(f"Error making {method} request to {url}: {str(e)}")
+        raise
 
 # ------------------- GET BOOKS -------------------
 @allure.feature('Get Books')
