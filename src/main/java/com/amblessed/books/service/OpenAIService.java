@@ -14,11 +14,9 @@ import com.amblessed.books.exception.RequestFailedException;
 import okhttp3.*;
 import org.springframework.stereotype.Service;
 import org.json.*;
-//import org.springframework.web.bind.annotation.RequestBody;
 
-import java.io.IOException;
+
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -26,7 +24,7 @@ public class OpenAIService {
 
     OkHttpClient client = new OkHttpClient();
 
-    public List<String> getRecommendations(String prompt) throws IOException {
+    public List<String> getRecommendations(String prompt)  {
         String apiKey = System.getenv("OPENAI_API_KEY");
         if (apiKey != null)
         {
