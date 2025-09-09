@@ -18,12 +18,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.util.*;
 
 @Tag(name = "Books", description = "Books API")
@@ -229,7 +227,7 @@ public class BookController {
     }
 
     @GetMapping("/recommendations/{id}")
-    public ResponseEntity<Map<String, Object>> getRecommendations(@PathVariable long id) throws IOException {
+    public ResponseEntity<Map<String, Object>> getRecommendations(@PathVariable long id) {
         Optional<Book> book = books.stream().filter(b -> b.getId() == id).findFirst();
         if (book.isEmpty()) {
             throw new BookNotFoundException(String.format("No book with id: '%d' found", id));
@@ -241,7 +239,10 @@ public class BookController {
         );
 
         List<String> recommendations = openAIService.getRecommendations(prompt);
-        return ResponseEntity.ok(Map.of("recommendations", recommendations));
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("prompt", prompt);
+        responseBody.put("recommendations", recommendations);
+        return ResponseEntity.ok(responseBody);
     }
 
     private Book createBookFromRequest(BookRequest bookRequest){

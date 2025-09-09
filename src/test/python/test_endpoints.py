@@ -7,10 +7,62 @@ from requests import Response
 import allure
 import pytest
 import requests
+import random
 
 
 BASE_URL = "http://localhost:8080/api/v1"
 TIMEOUT = 10
+RANDOM_ID = random.randint(15, 23)
+RANDOM_LARGE_ID = random.randint(60000, 80000)
+RANDOM_NEGATIVE_ID = random.randint(-22, -1)
+book = {"title": "Introduction to Prompt Engineering", "author": "Onwumere Okechukwu Bright", "category": "Science", "rating": 5}
+VALID_PARAMS_TITLE = {"title": "Divergent"}
+VALID_PARAMS_TITLE_TWO = {"title": "The Lord of the Rings"}
+MULTIPLE_PARAMS_TITLE = {"title": "The Da Vinci Code"}
+INVALID_PARAMS_TITLE = {"title": "BadBookTitle"}
+EXPECTED_DETAIL = "Book(s) with title 'BadBookTitle' not found"
+EXPECTED_DETAIL_MULTIPLE = "Multiple books found"
+EXPECTED_DETAIL_INVALID_ID = "Invalid ID: Id must be greater than 0"
+
+test_cases = {
+    "GET": [
+        # ---------------- All Books ----------------
+        {"story": "Get All Books", "endpoint": "/books", "params": None, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": "books", "type": "Positive Test"},
+        # ---------------- Books by ID ----------------
+        {"story": "Get Books By ID", "endpoint": "/books/6", "params": None, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": None, "type": "Positive Test"},
+        {"story": "Get Books By ID", "endpoint": f"/books/{RANDOM_LARGE_ID}", "params": None, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": f"Book with id {RANDOM_LARGE_ID} not found", "check_field": None, "type": "Negative Test"},
+        {"story": "Get Books By ID", "endpoint": f"/books/{RANDOM_NEGATIVE_ID}", "params": None, "expected_status": HTTPStatus.BAD_REQUEST, "expected_detail": EXPECTED_DETAIL_INVALID_ID, "check_field": None, "type": "Negative Test"},
+        # ---------------- Books by Category ----------------
+        {"story": "Get Books By Category", "endpoint": "/books", "params": {"category": "Fantasy"}, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": "category", "type": "Positive Test"},
+        {"story": "Get Books By Category", "endpoint": "/books", "params": {"category": "History"}, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": "No books found", "check_field": None, "type": "Negative Test"},
+        # ---------------- Books by Title ----------------
+        {"story": "Get Books By Title", "endpoint": "/books", "params": MULTIPLE_PARAMS_TITLE, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": "title", "type": "Positive Test"},
+        {"story": "Get Books By Title", "endpoint": "/books", "params": {"title": "Sunflower"}, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": None, "check_field": None, "type": "Negative Test"},
+    ],
+    "DELETE": [
+        # ---------------- Delete Book by ID ----------------
+        {"story": "Delete Book By ID", "endpoint": "/books/6", "params": None, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": None, "type": "Positive Test"},
+        {"story": "Delete Book By ID", "endpoint": f"/books/{RANDOM_LARGE_ID}", "params": None, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": f"Book with id: '{RANDOM_LARGE_ID}' not found", "check_field": None, "type": "Negative Test"},
+        {"story": "Delete Book By ID", "endpoint": f"/books/{RANDOM_NEGATIVE_ID}", "params": None, "expected_status": HTTPStatus.BAD_REQUEST, "expected_detail": EXPECTED_DETAIL_INVALID_ID, "check_field": None, "type": "Negative Test"},
+        # ---------------- Delete Book by Title ----------------
+        {"story": "Delete Book By Title", "endpoint": "/books", "params": VALID_PARAMS_TITLE_TWO, "expected_status": HTTPStatus.OK, "expected_detail": "1 book with title 'Divergent' deleted successfully", "check_field": "category", "type": "Positive Test"},
+        {"story": "Delete Book By Title", "endpoint": "/books", "params": INVALID_PARAMS_TITLE, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": EXPECTED_DETAIL, "check_field": None, "type": "Negative Test"}
+    ],
+    "PUT":[
+        # ---------------- Update Book by ID ----------------
+        {"story": "Update Book By ID", "endpoint": "/books/4", "params": {}, "payload": book, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": None, "type": "Positive Test"},
+        {"story": "Update Book By ID", "endpoint": f"/books/{RANDOM_LARGE_ID}", "params":{}, "payload": book, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": f"Book with id: '{RANDOM_LARGE_ID}' not found", "check_field": None, "type": "Negative Test"},
+        {"story": "Update Book By ID", "endpoint": f"/books/{RANDOM_NEGATIVE_ID}", "params":{}, "payload": book, "expected_status": HTTPStatus.BAD_REQUEST, "expected_detail": EXPECTED_DETAIL_INVALID_ID, "check_field": None, "type": "Negative Test"},
+        # ---------------- Update Book by Title ----------------
+        {"story": "Update Book By Title", "endpoint": "/books", "payload": book, "params": VALID_PARAMS_TITLE, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": "category", "type": "Positive Test"},
+        {"story": "Update Book By Title", "endpoint": "/books", "payload": book, "params": INVALID_PARAMS_TITLE, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": EXPECTED_DETAIL, "check_field": None, "type": "Negative Test"},
+        {"story": "Update Book By Title", "endpoint": "/books", "payload": book, "params": MULTIPLE_PARAMS_TITLE, "expected_status": HTTPStatus.CONFLICT, "expected_detail": "Multiple books found", "check_field": None, "type": "Negative Test"}
+    ],
+    "RECOMMEND":[
+        # ---------------- Recommend Book by ID ----------------
+        {"story": "Recommend Book By Title", "endpoint": f"/recommendations/{RANDOM_ID}", "params": {}, "payload": {}, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": None, "type": "Positive Test"}
+    ]
+}
 
 def print_response(response):
     print(json.dumps(response.json(), indent=4, sort_keys=True))
@@ -29,7 +81,7 @@ def _are_all_strings(params: Dict) -> bool:
               for k, v in params.items())
 
 
-def _validate_request_params(params: Optional[Dict]) -> None:
+def _validate_request_params(params: Optional[Dict]):
     """Validate request parameters.
     
     Args:
@@ -49,7 +101,7 @@ def _validate_request_params(params: Optional[Dict]) -> None:
         raise ValueError("All keys and values in params must be strings")
 
 
-def _validate_positive_response(data: List[Dict], case: Dict[str, Any]) -> None:
+def _validate_positive_response(data: List[Dict], case: Dict[str, Any]):
     """Validate response data for positive test cases.
     
     Args:
@@ -85,7 +137,7 @@ def assign_severity(case: Dict, feature: str) -> tuple:
     return is_positive_test, step_title
 
 
-def _validate_negative_response(response: Response, case: Dict[str, Any]) -> None:
+def _validate_negative_response(response: Response, case: Dict[str, Any]):
     """Validate response for negative test cases.
     
     Args:
@@ -137,53 +189,6 @@ def make_request(method: str, endpoint: str, params: Optional[Dict] = None, json
         raise
 
 
-# ------------------- GENERIC GET TEST WITH SEVERITY -------------------
-book = {"title": "Introduction to Prompt Engineering", "author": "Onwumere Okechukwu Bright", "category": "Science", "rating": 5}
-VALID_PARAMS_TITLE = {"title": "Divergent"}
-VALID_PARAMS_TITLE_TWO = {"title": "The Lord of the Rings"}
-MULTIPLE_PARAMS_TITLE = {"title": "The Da Vinci Code"}
-INVALID_PARAMS_TITLE = {"title": "BadBookTitle"}
-EXPECTED_DETAIL = "Book(s) with title 'BadBookTitle' not found"
-EXPECTED_DETAIL_MULTIPLE = "Multiple books found"
-EXPECTED_DETAIL_INVALID_ID = "Invalid ID: Id must be greater than 0"
-
-test_cases = {
-    "GET": [
-    # ---------------- All Books ----------------
-    {"story": "Get All Books", "endpoint": "/books", "params": None, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": "books", "type": "Positive Test"},
-    # ---------------- Books by ID ----------------
-    {"story": "Get Books By ID", "endpoint": "/books/6", "params": None, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": None, "type": "Positive Test"},
-    {"story": "Get Books By ID", "endpoint": "/books/4999", "params": None, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": "Book with id 4999 not found", "check_field": None, "type": "Negative Test"},
-    {"story": "Get Books By ID", "endpoint": "/books/-5", "params": None, "expected_status": HTTPStatus.BAD_REQUEST, "expected_detail": EXPECTED_DETAIL_INVALID_ID, "check_field": None, "type": "Negative Test"},
-    # ---------------- Books by Category ----------------
-    {"story": "Get Books By Category", "endpoint": "/books", "params": {"category": "Fantasy"}, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": "category", "type": "Positive Test"},
-    {"story": "Get Books By Category", "endpoint": "/books", "params": {"category": "History"}, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": "No books found", "check_field": None, "type": "Negative Test"},
-    # ---------------- Books by Title ----------------
-    {"story": "Get Books By Title", "endpoint": "/books", "params": MULTIPLE_PARAMS_TITLE, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": "title", "type": "Positive Test"},
-    {"story": "Get Books By Title", "endpoint": "/books", "params": {"title": "Sunflower"}, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": None, "check_field": None, "type": "Negative Test"},
-    ],
-     "DELETE": [
-    # ---------------- Delete Book by ID ----------------
-    {"story": "Delete Book By ID", "endpoint": "/books/6", "params": None, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": None, "type": "Positive Test"},
-    {"story": "Delete Book By ID", "endpoint": "/books/4999", "params": None, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": "Book with id: '4999' not found", "check_field": None, "type": "Negative Test"},
-    {"story": "Delete Book By ID", "endpoint": "/books/-5", "params": None, "expected_status": HTTPStatus.BAD_REQUEST, "expected_detail": EXPECTED_DETAIL_INVALID_ID, "check_field": None, "type": "Negative Test"},
-    # ---------------- Delete Book by Title ----------------
-    {"story": "Delete Book By Title", "endpoint": "/books", "params": VALID_PARAMS_TITLE_TWO, "expected_status": HTTPStatus.OK, "expected_detail": "1 book with title 'Divergent' deleted successfully", "check_field": "category", "type": "Positive Test"},
-    {"story": "Delete Book By Title", "endpoint": "/books", "params": INVALID_PARAMS_TITLE, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": EXPECTED_DETAIL, "check_field": None, "type": "Negative Test"}
-    ],
-    "PUT":[
-        # ---------------- Update Book by ID ----------------
-        {"story": "Update Book By ID", "endpoint": "/books/4", "params": {}, "payload": book, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": None, "type": "Positive Test"},
-        {"story": "Update Book By ID", "endpoint": "/books/4999", "params":{}, "payload": book, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": "Book with id: '4999' not found", "check_field": None, "type": "Negative Test"},
-        {"story": "Update Book By ID", "endpoint": "/books/-5", "params":{}, "payload": book, "expected_status": HTTPStatus.BAD_REQUEST, "expected_detail": EXPECTED_DETAIL_INVALID_ID, "check_field": None, "type": "Negative Test"},
-        # ---------------- Update Book by Title ----------------
-        {"story": "Update Book By Title", "endpoint": "/books", "payload": book, "params": VALID_PARAMS_TITLE, "expected_status": HTTPStatus.OK, "expected_detail": None, "check_field": "category", "type": "Positive Test"},
-        {"story": "Update Book By Title", "endpoint": "/books", "payload": book, "params": INVALID_PARAMS_TITLE, "expected_status": HTTPStatus.NOT_FOUND, "expected_detail": EXPECTED_DETAIL, "check_field": None, "type": "Negative Test"},
-        {"story": "Update Book By Title", "endpoint": "/books", "payload": book, "params": MULTIPLE_PARAMS_TITLE, "expected_status": HTTPStatus.CONFLICT, "expected_detail": "Multiple books found", "check_field": None, "type": "Negative Test"}
-    ]
-}
-
-
 def _validate_negative_response_detail(response: requests.Response, case: Dict):
     """Helper to validate error details in negative test cases."""
     if not case:
@@ -209,7 +214,14 @@ def _validate_positive_response_detail(response: requests.Response, case: Dict):
         for data in books_array:
             assert data[value] == case[value], f"Book {value} mismatch for {case}"
 
+def attach_response_body(response: requests.Response):
+    allure.attach(
+            response.text,
+            name="Response Body",
+            attachment_type=allure.attachment_type.JSON
+        )
 
+# ------------------- GENERIC GET TEST WITH SEVERITY -------------------
 @pytest.mark.get
 @pytest.mark.parametrize("case", test_cases["GET"])
 def test_generic_get_books_severity(case):
@@ -229,6 +241,8 @@ def test_generic_get_books_severity(case):
         else:
             # Validate expected detail for negative responses
             _validate_negative_response_detail(response, case["expected_detail"])
+
+        attach_response_body(response)
 
 
 
@@ -326,6 +340,8 @@ def test_generic_update_books_severity(case):
             # Validate expected detail for negative responses
             _validate_negative_response_detail(response, case["expected_detail"])
 
+        attach_response_body(response)
+
 
 # ------------------- GENERIC DELETE BOOK TEST WITH SEVERITY -------------------
 @pytest.mark.get
@@ -347,14 +363,23 @@ def test_generic_delete_books_severity(case):
             # Validate expected detail for negative responses
             _validate_negative_response_detail(response, case["expected_detail"])
 
+        attach_response_body(response)
+
 
 @pytest.mark.recommend
-def test_recommendations():
-    response = requests.get(f"{BASE_URL}/recommendations/25")
-    response_json = response.json()
-    recommendations = response_json.get("recommendations", [])
-    print(recommendations)
-    assert isinstance(recommendations, list), f"Expected list, got {type(recommendations)}"
-    assert response.status_code == 200
-    assert len(recommendations) == 5
-    assert all(isinstance(novel, str) for novel in recommendations)
+@pytest.mark.parametrize("case", test_cases["RECOMMEND"])
+def test_recommendations(case):
+    _, step_title = assign_severity(case, "Recommend Books")
+
+    with allure.step(step_title):
+        response = make_request("GET", case["endpoint"], params=case["params"])
+        _validate_status_code(response, case["expected_status"])
+        response_json = response.json()
+        recommendations = response_json.get("recommendations", [])
+        assert isinstance(recommendations, list), f"Expected list, got {type(recommendations)}"
+        assert len(recommendations) == 5
+        assert all(isinstance(novel, str) for novel in recommendations)
+
+        attach_response_body(response)
+
+
