@@ -57,12 +57,16 @@ jobs:
             sleep 2
           done
 
-      # 🧪 Run Pytest with Allure
-      - name: Run Pytest
+      # 🧪 Install Python dependencies
+      - name: Install Python dependencies
         run: |
           pip install -r src/test/python/requirements.txt
           pip install allure-pytest requests
-          pytest src/test/python/test_endpoints.py --alluredir=allure-results -v
+
+      # 🧪 Run Pytest with Allure
+      - name: Run Pytest
+        run: |
+          pytest src/test/python --alluredir=allure-results -v
 
       # 🧰 Install Allure CLI
       - name: Install Allure CLI
@@ -75,7 +79,10 @@ jobs:
 
       # 📊 Generate Allure Report
       - name: Generate Allure Report
-        run: allure generate allure-results --clean -o allure-report
+        run: |
+          echo "Generating Allure report..."
+          ls -la allure-results  # ensure results exist
+          allure generate allure-results --clean -o allure-report
 
       # 📁 Upload Allure Report Artifact
       - name: Upload Allure Report

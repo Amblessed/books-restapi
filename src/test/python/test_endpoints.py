@@ -70,10 +70,8 @@ def print_response(response):
 
 def _are_all_strings(params: Dict) -> bool:
     """Check if all keys and values in params are strings.
-    
     Args:
         params: Dictionary to validate
-        
     Returns:
         bool: True if all keys and values are strings, False otherwise
     """
