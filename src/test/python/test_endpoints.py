@@ -346,3 +346,15 @@ def test_generic_delete_books_severity(case):
         else:
             # Validate expected detail for negative responses
             _validate_negative_response_detail(response, case["expected_detail"])
+
+
+@pytest.mark.recommend
+def test_recommendations():
+    response = requests.get(f"{BASE_URL}/recommendations/25")
+    response_json = response.json()
+    recommendations = response_json.get("recommendations", [])
+    print(recommendations)
+    assert isinstance(recommendations, list), f"Expected list, got {type(recommendations)}"
+    assert response.status_code == 200
+    assert len(recommendations) == 5
+    assert all(isinstance(novel, str) for novel in recommendations)

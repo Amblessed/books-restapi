@@ -12,23 +12,32 @@ import com.amblessed.books.entity.Book;
 import com.amblessed.books.entity.BookRequest;
 import com.amblessed.books.exception.BookAlreadyExistsException;
 import com.amblessed.books.exception.BookNotFoundException;
+import com.amblessed.books.service.OpenAIService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.*;
 
 @Tag(name = "Books", description = "Books API")
 @RestController
 @RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class BookController {
 
     private final List<Book> books = new ArrayList<>();
 
-    public BookController() {
+    private final OpenAIService openAIService;
+
+    @PostConstruct
+    public void init() {
         initBooks();
     }
 
@@ -40,7 +49,7 @@ public class BookController {
         books.add(new Book(4, "The Catcher in the Rye", "J.D. Salinger", "Fiction", 3));
         books.add(new Book(5, "Moby Dick", "Herman Melville", "Fiction", 4));
         books.add(new Book(6, "War and Peace", "Leo Tolstoy", "Fiction", 5));
-        books.add(new Book(7, "Pride and Prejudice", "Jane Austen", "Fiction", 4));
+        books.add(new Book(7, "Angels & Demons", "Dan Brown", "Thriller", 4));
         books.add(new Book(8, "The Hobbit", "J.R.R. Tolkien", "Fantasy", 5));
         books.add(new Book(9, "The Lord of the Rings", "J.R.R. Tolkien", "Fantasy", 5));
         books.add(new Book(10, "Harry Potter and the Sorcerer's Stone", "J.K. Rowling", "Fantasy", 5));
@@ -50,6 +59,15 @@ public class BookController {
         books.add(new Book(14, "The Hunger Games", "Suzanne Collins", "Dystopian", 4));
         books.add(new Book(15, "Divergent", "Veronica Roth", "Dystopian", 3));
         books.add(new Book(16, "The Da Vinci Code", "Onwumere Bright", "Thriller", 5));
+        books.add(new Book(17, "Inferno", "Dan Brown", "Thriller", 5));
+        books.add(new Book(18, "Pride and Prejudice", "Jane Austen", "Fiction", 4));
+        books.add(new Book(19, "The Lost Symbol", "Dan Brown", "Thriller", 5));
+        books.add(new Book(20, "The Last Templar", "Raymond Khoury", "Thriller", 4));
+        books.add(new Book(21, "A Game of Thrones", "George R.R. Martin", "Thriller", 5));
+        books.add(new Book(22, "The Chronicles of Narnia", "C.S. Lewis", "Thriller", 5));
+        books.add(new Book(23, "The Wheel of Time", "Robert Jordan", "Fiction", 4));
+        books.add(new Book(24, "The Sword of Shannara", "Terry Brooks", "Thriller", 5));
+        books.add(new Book(25, "The Malazan Book of the Fallen", "Steven Erikson", "Thriller", 4));
     }
 
     @Operation(summary = "Get Book By ID", description = "Get a particular Book By ID")
@@ -210,6 +228,21 @@ public class BookController {
                 .body(Map.of("message", String.format("Book with id: '%s' deleted successfully", id)));
     }
 
+    @GetMapping("/recommendations/{id}")
+    public ResponseEntity<Map<String, Object>> getRecommendations(@PathVariable long id) throws IOException {
+        Optional<Book> book = books.stream().filter(b -> b.getId() == id).findFirst();
+        if (book.isEmpty()) {
+            throw new BookNotFoundException(String.format("No book with id: '%d' found", id));
+        }
+
+        String prompt = String.format(
+                "Suggest 5 books similar to '%s' in the '%s' category",
+                book.get().getTitle(), book.get().getCategory()
+        );
+
+        List<String> recommendations = openAIService.getRecommendations(prompt);
+        return ResponseEntity.ok(Map.of("recommendations", recommendations));
+    }
 
     private Book createBookFromRequest(BookRequest bookRequest){
         return new Book(
