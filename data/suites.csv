@@ -1,0 +1,74 @@
+"Status","Start Time","Stop Time","Duration in ms","Parent Suite","Suite","Sub Suite","Test Class","Test Method","Name","Description"
+"passed","Thu Sep 11 13:24:28 UTC 2025","Thu Sep 11 13:24:28 UTC 2025","3","src.test.python","test_endpoints","","","","test_negative_create_book_dynamic[book1-400-Invalid rating: Rating must be between 1 and 5]"," Dynamically generated negative tests for creating a book "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","2","src.test.python","test_endpoints","","","","test_negative_create_book_dynamic[book7-409-Book already exists]"," Dynamically generated negative tests for creating a book "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","3","src.test.python","test_endpoints","","","","test_generic_delete_books_severity[case4]","
+    Generic DELETE test for Books API with dynamic Allure labels and severity.
+    "
+"passed","Thu Sep 11 13:24:28 UTC 2025","Thu Sep 11 13:24:28 UTC 2025","55","src.test.python","test_endpoints","","","","test_positive_create_book_valid_parameters","Test Create Book with new Title"
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:32 UTC 2025","3382","src.test.python","test_endpoints","","","","test_recommendations[case0]",""
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","3","src.test.python","test_endpoints","","","","test_generic_update_books_severity[case4]","
+    Generic UPDATE test for Books API with dynamic Allure labels and severity.
+    pytest -m put
+    "
+"passed","Thu Sep 11 13:24:28 UTC 2025","Thu Sep 11 13:24:28 UTC 2025","3","src.test.python","test_endpoints","","","","test_generic_get_books_severity[case5]","
+    Generic GET test for Books API with dynamic Allure labels and severity.
+    "
+"passed","Thu Sep 11 13:24:28 UTC 2025","Thu Sep 11 13:24:28 UTC 2025","12","src.test.python","test_endpoints","","","","test_negative_create_book_dynamic[book0-400-Invalid rating: Rating must be between 1 and 5]"," Dynamically generated negative tests for creating a book "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","3","src.test.python","test_endpoints","","","","test_generic_delete_books_severity[case1]","
+    Generic DELETE test for Books API with dynamic Allure labels and severity.
+    "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","3","src.test.python","test_endpoints","","","","test_generic_update_books_severity[case1]","
+    Generic UPDATE test for Books API with dynamic Allure labels and severity.
+    pytest -m put
+    "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","7","src.test.python","test_endpoints","","","","test_generic_update_books_severity[case0]","
+    Generic UPDATE test for Books API with dynamic Allure labels and severity.
+    pytest -m put
+    "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","3","src.test.python","test_endpoints","","","","test_generic_delete_books_severity[case0]","
+    Generic DELETE test for Books API with dynamic Allure labels and severity.
+    "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","3","src.test.python","test_endpoints","","","","test_generic_update_books_severity[case2]","
+    Generic UPDATE test for Books API with dynamic Allure labels and severity.
+    pytest -m put
+    "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","3","src.test.python","test_endpoints","","","","test_negative_create_book_dynamic[book5-400-Category must be between 5 and 20 characters]"," Dynamically generated negative tests for creating a book "
+"passed","Thu Sep 11 13:24:28 UTC 2025","Thu Sep 11 13:24:28 UTC 2025","18","src.test.python","test_endpoints","","","","test_generic_get_books_severity[case2]","
+    Generic GET test for Books API with dynamic Allure labels and severity.
+    "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","4","src.test.python","test_endpoints","","","","test_generic_update_books_severity[case3]","
+    Generic UPDATE test for Books API with dynamic Allure labels and severity.
+    pytest -m put
+    "
+"passed","Thu Sep 11 13:24:28 UTC 2025","Thu Sep 11 13:24:28 UTC 2025","4","src.test.python","test_endpoints","","","","test_generic_get_books_severity[case3]","
+    Generic GET test for Books API with dynamic Allure labels and severity.
+    "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","4","src.test.python","test_endpoints","","","","test_negative_create_book_dynamic[book4-400-Author must be between 10 and 25 characters]"," Dynamically generated negative tests for creating a book "
+"passed","Thu Sep 11 13:24:28 UTC 2025","Thu Sep 11 13:24:28 UTC 2025","3","src.test.python","test_endpoints","","","","test_generic_get_books_severity[case7]","
+    Generic GET test for Books API with dynamic Allure labels and severity.
+    "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","2","src.test.python","test_endpoints","","","","test_generic_update_books_severity[case5]","
+    Generic UPDATE test for Books API with dynamic Allure labels and severity.
+    pytest -m put
+    "
+"passed","Thu Sep 11 13:24:28 UTC 2025","Thu Sep 11 13:24:28 UTC 2025","3","src.test.python","test_endpoints","","","","test_generic_get_books_severity[case6]","
+    Generic GET test for Books API with dynamic Allure labels and severity.
+    "
+"passed","Thu Sep 11 13:24:28 UTC 2025","Thu Sep 11 13:24:28 UTC 2025","10","src.test.python","test_endpoints","","","","test_generic_get_books_severity[case1]","
+    Generic GET test for Books API with dynamic Allure labels and severity.
+    "
+"passed","Thu Sep 11 13:24:28 UTC 2025","Thu Sep 11 13:24:28 UTC 2025","86","src.test.python","test_endpoints","","","","test_generic_get_books_severity[case0]","
+    Generic GET test for Books API with dynamic Allure labels and severity.
+    "
+"passed","Thu Sep 11 13:24:28 UTC 2025","Thu Sep 11 13:24:28 UTC 2025","3","src.test.python","test_endpoints","","","","test_generic_get_books_severity[case4]","
+    Generic GET test for Books API with dynamic Allure labels and severity.
+    "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","3","src.test.python","test_endpoints","","","","test_generic_delete_books_severity[case2]","
+    Generic DELETE test for Books API with dynamic Allure labels and severity.
+    "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","4","src.test.python","test_endpoints","","","","test_negative_create_book_dynamic[book3-400-Author must be between 10 and 25 characters]"," Dynamically generated negative tests for creating a book "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","3","src.test.python","test_endpoints","","","","test_negative_create_book_dynamic[book6-400-Category must be between 5 and 20 characters]"," Dynamically generated negative tests for creating a book "
+"passed","Thu Sep 11 13:24:28 UTC 2025","Thu Sep 11 13:24:28 UTC 2025","3","src.test.python","test_endpoints","","","","test_negative_create_book_dynamic[book2-400-Invalid rating: Rating must be between 1 and 5]"," Dynamically generated negative tests for creating a book "
+"passed","Thu Sep 11 13:24:29 UTC 2025","Thu Sep 11 13:24:29 UTC 2025","3","src.test.python","test_endpoints","","","","test_generic_delete_books_severity[case3]","
+    Generic DELETE test for Books API with dynamic Allure labels and severity.
+    "

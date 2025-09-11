@@ -1,0 +1,1 @@
+[{"values":["Linux 6.11.0-1018-azure"],"name":"OS"},{"values":["3.12.3"],"name":"Python"},{"values":["BooksApp"],"name":"Project"},{"values":["http://localhost:8080/api/v1/"],"name":"API_BASE_URL"}]
